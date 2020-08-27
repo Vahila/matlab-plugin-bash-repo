@@ -1,16 +1,34 @@
+// Declarative Pipeline
 pipeline {
-   agent any
-   environment {
-       PATH = "C:\\Program Files\\MATLAB\\R2020a\\bin;${PATH}"   // Windows agent
-    // PATH = "/usr/local/MATLAB/R2020a/bin:${PATH}"   // Linux agent
-    // PATH = "/Applications/MATLAB_R2020a.app/bin:${PATH}"   // macOS agent    
-   }
-    stages{
-        stage('Run MATLAB Command') {
-            steps
-            {
-               runMATLABCommand "disp('Hello World!')"
-            }       
-        }                
-    } 
+    agent any
+    stages {
+        stage('BuildAndTest') {
+            matrix {
+                agent any
+                environment {
+                    PATH = "C:\\Program Files\\MATLAB\\${MATLAB_VERSION}\\bin;${PATH}"   // Windows agent
+                }
+                axes {
+                    axis {
+                        name 'MATLAB_VERSION'
+                        values 'R2018b', 'R2019a', 'R2020a'
+                    }
+                }
+                stages {
+                    stage('Run MATLAB commands') {
+                        steps {
+                            runMATLABCommand 'ver'
+                            runMATLABCommand 'pwd'
+                        }
+                    }
+                    stage('Run MATLAB tests'){
+                        steps {
+                            runMATLABTests(testResultsJUnit: 'test-results/results.xml',
+                                           codeCoverageCobertura: 'code-coverage/coverage.xml')
+                        }  
+                    }
+                }
+            } 
+        }
+    }
 }
